@@ -1,14 +1,16 @@
 from fastmcp import FastMCP
 from github import Github, GithubException, UnknownObjectException, RateLimitExceededException
 from typing import List, Dict, Callable
+import os
 
-# MCP 인스턴스를 변수로 받아 Git 도구 등록
+# MCP 인스턴스를 변수로 받아 GitHub 도구 등록
 def register_github_tools(mcp: FastMCP) -> None:
     # 1. git 최근 commit 내역 불러오기
     @mcp.tool()
     def get_recent_github_commits(owner: str, repo_path: str, branch: str=None, count: int=5) -> List[Dict]:
         try:
-            github = Github()
+            token = os.getenv("GITHUB_TOKEN")
+            github = Github(token) if token else Github()
             repo = github.get_repo(f"{owner}/{repo_path}")
 
             commits_data = []
