@@ -3,9 +3,9 @@ from git import Repo, InvalidGitRepositoryError, GitCommandError
 from typing import List, Dict, Callable
 
 # MCP 인스턴스를 변수로 받아 Git 도구 등록
-def register_git_tools(mcp_instance: FastMCP) -> None:
+def register_git_tools(mcp: FastMCP) -> None:
     # 1. git 최근 commit 내역 불러오기
-    @mcp_instance.tool()
+    @mcp.tool()
     def get_recent_commits(repo_path: str, count: int=5) -> List[Dict]:
         try:
             repo = Repo(repo_path)

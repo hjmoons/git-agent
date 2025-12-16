@@ -1,23 +1,30 @@
-from fastmcp import FastMCP
-from git_mcp.tools import register_git_tools
+from fastmcp import Client
+import asyncio
 
-def test_main():
-    """서버 설정과 동일하게 도구 등록 후 테스트"""
-    print("=" * 10)
-    print("Git Agent MCP 서버 기능 테스트")
-    print("=" * 10)
+async def test_git_tools():
+    print("-" * 10)
+    print("클라이언트 생성 중")
 
-    print("\n[1] MCP 서버 생성 및 도구 등록...")
-    mcp = FastMCP("Git-Tool-Test")
-    register_git_tools(mcp)
-    print("✓ 완료\n")
+    client = Client(r".\src\git_mcp\server.py")
 
-    # 등록된 도구 목록 확인
-    print("[2] 등록된 도구:")
-    if hasattr(mcp, '_tools'):
-        for tool_name in mcp._tools:
-            print(f"  - {tool_name}")
-    print()
+    try:
+        async with client:
+            print("-" * 10)
+            print("클라이언트 연결됨")
+
+            commit_result = await client.call_tool("get_recent_commits", {"repo_path": r"C:\Users\mhj59\IdeaProjects\git-agent"})
+
+            # 구조화된 데이터만 출력
+            for commit in commit_result.structured_content['result']:
+                print(f"[{commit['sha'][:8]}] {commit['message']}")
+                print(f"  작성자: {commit['author']}")
+                print(f"  날짜: {commit['date']}\n")
+
+    except Exception as e:
+        print(f"오류 발생: {e}")
+    finally:
+        print("-" * 10)
+        print("클라이언트 상호작용 완료")
 
 if __name__ == "__main__":
-    test_main()
+    asyncio.run(test_git_tools())
