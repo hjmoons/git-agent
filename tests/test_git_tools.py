@@ -5,7 +5,7 @@ async def test_git_tools():
     print("-" * 10)
     print("클라이언트 생성 중")
 
-    client = Client(r".\src\git_mcp\server.py")
+    client = Client(r".\src\git_mcp\__main__.py")
 
     try:
         async with client:

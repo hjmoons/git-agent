@@ -11,5 +11,8 @@ dependencies = [
     "PyGithub",
 ]
 
+[project.scripts]
+git-agent = "git_mcp.__main__:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
