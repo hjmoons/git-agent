@@ -17,19 +17,47 @@ def register_github_tools(mcp: FastMCP) -> None:
 
             if branch:
                 for commit in repo.get_commits(sha=branch)[:count]:
+                    diff_list = []
+                    files = commit.files
+
+                    for file in files:
+                        diff_list.append({
+                            "name": file.filename,
+                            "status": file.status,
+                            "add": file.additions,
+                            "del": file.deletions,
+                            "patch": file.patch,
+                            "url": file.blob_url
+                        })
+
                     commits_data.append({
                         "sha": commit.sha[:7],
                         "author": commit.commit.author.name,
                         "date": commit.commit.author.date.isoformat(),
-                        "message": commit.commit.message.split("\n")[0]
+                        "message": commit.commit.message.split("\n")[0],
+                        "files": diff_list
                     })
             else:
                 for commit in repo.get_commits()[:count]:
+                    diff_list = []
+                    files = commit.files
+
+                    for file in files:
+                        diff_list.append({
+                            "name": file.filename,
+                            "status": file.status,
+                            "add": file.additions,
+                            "del": file.deletions,
+                            "patch": file.patch,
+                            "url": file.blob_url
+                        })
+
                     commits_data.append({
                         "sha": commit.sha[:7],
                         "author": commit.commit.author.name,
                         "date": commit.commit.author.date.isoformat(),
-                        "message": commit.commit.message.split("\n")[0]
+                        "message": commit.commit.message.split("\n")[0],
+                        "files": diff_list
                     })
             
             return commits_data
