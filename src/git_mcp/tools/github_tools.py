@@ -8,70 +8,46 @@ from .commit_history_template import generate_commit_history_markdown, append_co
 def register_github_tools(mcp: FastMCP) -> None:
     # 1. git 최근 commit 내역 불러오기
     @mcp.tool()
-    def get_recent_github_commits(owner: str, repo_path: str, branch: str=None, count: int=5) -> List[Dict]:
+    def get_recent_github_commits(owner: str, repo_path: str, branch: str="main", count: int=5) -> List[Dict]:
         try:
             token = os.getenv("GITHUB_TOKEN")
-            github = Github(token) if token else Github()
+            if not token:
+                raise Exception("GITHUB_TOKEN environment variable is required")
+            
+            github = Github(token, verify=False) if token else Github()
             repo = github.get_repo(f"{owner}/{repo_path}")
 
             commits_data = []
 
-            if branch:
-                for commit in repo.get_commits(sha=branch)[:count]:
-                    diff_list = []
-                    files = sorted(list(commit.files), key=lambda f: f.additions + f.deletions, reverse=True)[:10]
+            for commit in repo.get_commits(sha=branch)[:count]:
+                diff_list = []
+                files = sorted(list(commit.files), key=lambda f: f.additions + f.deletions, reverse=True)[:10]
 
-                    for file in files:
-                        diff_list.append({
-                            "name": file.filename,
-                            "status": file.status,
-                            "add": file.additions,
-                            "del": file.deletions,
-                            "patch": file.patch[:2000] if file.patch else None,
-                            "url": file.blob_url
-                        })
-
-                    commits_data.append({
-                        "sha": commit.sha[:7],
-                        "author": commit.commit.author.name,
-                        "date": commit.commit.author.date.isoformat(),
-                        "message": commit.commit.message.split("\n")[0],
-                        "stats": {
-                            "total_files": len(files),
-                            "additions": commit.stats.additions,
-                            "deletions": commit.stats.deletions
-                        },
-                        "files": diff_list
+                for file in files:
+                    diff_list.append({
+                        "name": file.filename,
+                        "status": file.status,
+                        "add": file.additions,
+                        "del": file.deletions,
+                        "patch": file.patch[:2000] if file.patch else None,
+                        "url": file.blob_url
                     })
-            else:
-                for commit in repo.get_commits()[:count]:
-                    diff_list = []
-                    files = sorted(list(commit.files), key=lambda f: f.additions + f.deletions, reverse=True)[:10]
 
-                    for file in files:
-                        diff_list.append({
-                            "name": file.filename,
-                            "status": file.status,
-                            "add": file.additions,
-                            "del": file.deletions,
-                            "patch": file.patch[:2000] if file.patch else None,
-                            "url": file.blob_url
-                        })
-
-                    commits_data.append({
-                        "sha": commit.sha[:7],
-                        "author": commit.commit.author.name,
-                        "date": commit.commit.author.date.isoformat(),
-                        "message": commit.commit.message.split("\n")[0],
-                        "stats": {
-                            "total_files": len(files),
-                            "additions": commit.stats.additions,
-                            "deletions": commit.stats.deletions
-                        },
-                        "files": diff_list
-                    })
+                commits_data.append({
+                    "sha": commit.sha[:7],
+                    "author": commit.commit.author.name,
+                    "date": commit.commit.author.date.isoformat(),
+                    "message": commit.commit.message.split("\n")[0],
+                    "stats": {
+                        "total_files": len(files),
+                        "additions": commit.stats.additions,
+                        "deletions": commit.stats.deletions
+                    },
+                    "files": diff_list
+                })
             
             return commits_data
+        
         except UnknownObjectException:
             raise Exception(f"Repository '{owner}/{repo_path}' not found or private")
         except GithubException as e:
@@ -86,32 +62,7 @@ def register_github_tools(mcp: FastMCP) -> None:
 
     # 2. 요약된 커밋 내역을 Markdown으로 만들어서 GitHub에 커밋
     @mcp.tool()
-    def commit_history_to_github(
-        owner: str,
-        repo_path: str,
-        commits: List[Dict],
-        branch: str = "main",
-        history_file: str = "history.md"
-    ) -> Dict:
-        """
-        요약된 커밋 리스트를 받아서 Markdown 문서로 생성하고 GitHub에 커밋합니다.
-
-        사용 시나리오:
-        1. get_recent_github_commits로 커밋 조회
-        2. Claude/LLM이 커밋 내용 분석 및 요약
-        3. 이 도구로 요약된 내용을 Markdown으로 만들어 GitHub에 커밋
-
-        Args:
-            owner: 저장소 소유자
-            repo_path: 저장소 이름
-            commits: 요약된 커밋 딕셔너리 리스트
-                     각 커밋: {date, sha, author, message, stats: {total_files}}
-            branch: 커밋할 브랜치 (기본값: "main")
-            history_file: 생성할 파일명 (기본값: "history.md")
-
-        Returns:
-            커밋 결과 딕셔너리
-        """
+    def commit_history_to_github(owner: str, repo_path: str, commits: List[Dict], branch: str = "main", history_file: str = "history.md") -> Dict:
         try:
             token = os.getenv("GITHUB_TOKEN")
             if not token:
@@ -121,7 +72,7 @@ def register_github_tools(mcp: FastMCP) -> None:
             markdown_content = generate_commit_history_markdown(commits)
 
             # 2. GitHub API로 파일 커밋
-            github = Github(token)
+            github = Github(token, verify=False) if token else Github()
             repo = github.get_repo(f"{owner}/{repo_path}")
 
             commit_message = f"docs: Update commit history - {len(commits)} commits analyzed"
